@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  debug-env:
+    build:
+      context: ./debug_env
+      dockerfile: ./server/Dockerfile
+      args:
+        BUILD_MODE: standalone
+        ENV_NAME: debug_env
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=info
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+    volumes:
+      # Optional: mount code for development
+      - ./debug_env:/app/env:ro
+    networks:
+      - debug_env_network
+
+networks:
+  debug_env_network:
+    driver: bridge

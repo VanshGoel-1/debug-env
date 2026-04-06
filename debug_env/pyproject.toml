@@ -1,0 +1,70 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openenv-debug_env"
+version = "0.1.0"
+description = "Debug Env environment for OpenEnv"
+requires-python = ">=3.10"
+dependencies = [
+    # Core OpenEnv runtime (provides FastAPI server + HTTP client types)
+    # install from github
+    # "openenv-core[core] @ git+https://github.com/meta-pytorch/OpenEnv.git",
+    "openenv-core[core]>=0.2.2",
+    # Inference / benchmark client dependencies
+    "httpx>=0.27.0",
+    "langchain-core>=0.3.0",
+    "langchain-anthropic>=0.3.0",
+    "langchain-openai>=0.3.0",
+    "langchain-google-genai>=2.0.0",
+    # Database ORM for task persistence and episode tracking
+    "sqlalchemy>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.0.0",
+]
+
+[project.scripts]
+# Server entry point - enables running via: uv run --project . server
+# or: python -m debug_env.server.app
+server = "debug_env.server.app:main"
+
+[tool.setuptools]
+include-package-data = true
+packages = [
+    "debug_env",
+    "debug_env.data",
+    "debug_env.server",
+    "debug_env.server.core",
+    "debug_env.server.database",
+    "debug_env.server.database.managers",
+    "debug_env.server.database.models",
+    "debug_env.server.handlers",
+    "debug_env.server.mcp",
+    "debug_env.server.mcp.tools",
+    "debug_env.server.schemas",
+    "debug_env.server.tools",
+    "debug_env.server.tools.run_tests",
+    "debug_env.server.tools.read_file",
+    "debug_env.server.tools.edit_file",
+    "debug_env.server.tasks",
+    "debug_env.server.utils",
+    "debug_env.tasks",
+    "debug_env.tasks.task4",
+    "debug_env.tasks.task5",
+    "debug_env.tasks.task6",
+    "debug_env.tasks.task7",
+    "debug_env.tasks.task8",
+    "debug_env.tasks.task9",
+]
+package-dir = { "debug_env" = ".", "debug_env.server" = "server" }

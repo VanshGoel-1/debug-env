@@ -1,0 +1,75 @@
+# Planning docs and txt files
+planning/
+
+# AI tool rules / instruction files
+CLAUDE.md
+AGENTS.md
+GEMINI.md
+QUICKSTART.md
+COMPETITION_CHECKLIST.md
+IMPLEMENTATION_SUMMARY.md
+TECHNOLOGY_INTEGRATION.md
+.cursorrules
+.windsurfrules
+.mcp.json
+.opencode.json
+.claude/
+.cursor/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# uv
+uv.lock
+
+# Environment variables
+.env
+.env.*
+
+# Temp task workdirs (created at runtime by the environment)
+/tmp/debug_task_*/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.iml
+
+# code-review-graph generated files
+.code-review-graph/
+.code-review-graphignore
+
+# Results/output files generated during runs
+results_*.json
+
+# Runtime databases
+debug_env/server/*.db
+debug_env/server/*.db-shm
+debug_env/server/*.db-wal
+*.sqlite
+*.sqlite3
+
+# Claude Code local settings
+.claude/settings.local.json

@@ -1,0 +1,138 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openenv-debug-env"
+version = "0.1.0"
+description = "Debug Env - An OpenEnv benchmark for evaluating LLM agents on code debugging tasks"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    {name = "Meta Platforms, Inc.", email = "pytorch@meta.com"},
+]
+keywords = [
+    "openenv",
+    "benchmark",
+    "llm",
+    "agents",
+    "debugging",
+    "code",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    # OpenEnv runtime
+    "openenv-core[core]>=0.2.2",
+
+    # Web & HTTP
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "httpx>=0.27.0",
+
+    # LLM Inference (OpenAI primary, with support for others)
+    "openai>=1.29.0",  # Official OpenAI client
+    "langchain-core>=0.3.0",
+    "langchain-openai>=0.3.0",
+    "langchain-anthropic>=0.3.0",
+    "langchain-google-genai>=2.0.0",
+
+    # Database persistence
+    "sqlalchemy>=2.0.0",
+
+    # Utilities
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-asyncio>=0.23.0",
+    "black>=24.0.0",
+    "ruff>=0.3.0",
+]
+
+[project.scripts]
+# Server entry point - enables running via: python -m debug_env.server.app
+server = "debug_env.server.app:main"
+
+# Inference entry point
+inference = "inference:main"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["debug_env"]
+include = ["debug_env*"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | __pycache__
+)/
+'''
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "I",     # isort
+    "UP",    # pyupgrade
+    "SIM",   # flake8-simplify
+]
+ignore = [
+    "E501",  # line-too-long
+    "E203",  # whitespace-before-punctuation
+    "W503",  # line-break-before-binary-operator
+]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-v --strict-markers --tb=short"
+testpaths = ["tests"]
+asyncio_mode = "auto"

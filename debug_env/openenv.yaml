@@ -1,0 +1,99 @@
+spec_version: 1
+name: debug_env
+type: space
+runtime: fastapi
+app: server.app:app
+port: 8000
+description: >
+  A real-world debugging environment where LLM agents fix broken Python code.
+  Tasks range from simple syntax errors to complex logic bugs. Agents use
+  read_file, edit_file, and run_tests tools to identify and fix issues.
+  Rewards are based on test pass rate (0.0-1.0).
+
+author: Meta Platforms, Inc.
+version: 0.1.0
+
+tasks:
+  - id: task1
+    title: "Fix Simple Syntax Error"
+    description: >
+      A Python module with a syntax error in the function definition.
+      Agent must identify the missing colon and fix the function signature.
+    difficulty: easy
+    estimated_steps: 3
+  - id: task2
+    title: "Fix Logic Bug in Conditional"
+    description: >
+      A function with incorrect conditional logic that fails test assertions.
+      Agent must read tests, understand the expected behavior, and fix the logic.
+    difficulty: medium
+    estimated_steps: 5
+  - id: task3
+    title: "Fix Import and Type Issues"
+    description: >
+      Multiple functions with missing imports, type errors, and undefined variables.
+      Agent must diagnose and fix all issues to pass all tests.
+    difficulty: hard
+    estimated_steps: 8
+
+action_schema:
+  type: object
+  properties:
+    tool:
+      type: string
+      enum: ["run_tests", "read_file", "edit_file"]
+      description: Name of the tool to execute
+    args:
+      type: object
+      description: Tool-specific arguments
+  required: ["tool"]
+
+observation_schema:
+  type: object
+  properties:
+    pass_rate:
+      type: number
+      minimum: 0.0
+      maximum: 1.0
+      description: Fraction of tests passing (0.0-1.0)
+    logs:
+      type: string
+      description: Test output, file content, or execution logs
+    reward:
+      type: number
+      minimum: 0.0
+      maximum: 1.0
+      description: Reward signal based on pass_rate
+    done:
+      type: boolean
+      description: Whether all tests pass (episode complete)
+  required: ["pass_rate", "logs"]
+
+reward_schema:
+  type: object
+  properties:
+    reward:
+      type: number
+      minimum: 0.0
+      maximum: 1.0
+      description: Episode reward based on final pass_rate
+    done:
+      type: boolean
+      description: Whether episode is complete
+  required: ["reward", "done"]
+
+performance_metrics:
+  - pass_rate: Fraction of tests passing
+  - success_rate: Percentage of runs with full pass (across multiple attempts)
+  - pass@k: Probability that at least k runs succeed
+  - avg_steps: Average number of tool calls per successful run
+  - avg_time_ms: Average execution time per run
+
+deployment:
+  huggingface_space: true
+  dockerfile: ./debug_env/server/Dockerfile
+  docker_compose: ./docker-compose.yml
+  health_check: /health
+  max_runtime_minutes: 20
+  min_vcpu: 2
+  min_memory_gb: 8

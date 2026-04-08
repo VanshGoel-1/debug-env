@@ -59,6 +59,11 @@ async def startup_event():
     """Initialize database and seed task registry on startup."""
     init_db()
 
+@app.get("/")
+async def root():
+    """Root endpoint for HF Spaces health checks."""
+    return {"status": "ok", "message": "debug-env is running!"}
+
 
 def main(host: str = "0.0.0.0", port: int = 8000):
     """

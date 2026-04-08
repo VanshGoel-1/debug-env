@@ -2,7 +2,7 @@ import ast
 import difflib
 
 def _clamp(val: float) -> float:
-    return float(round(min(max(val, 0.0001), 0.9999), 4))
+    return float(round(min(max(val, 0.001), 0.999), 4))
 
 def grade(pass_rate: float) -> float:
     """Baseline reward — direct pass rate (used as fallback)."""

@@ -318,14 +318,14 @@ async def execute_run(
     elapsed_ms   = int((datetime.now(timezone.utc) - start_ts).total_seconds() * 1000)
     
     eval_rewards = [s["reward"] for s in steps_detail if s["tool"] in ("edit_file", "run_tests")]
-    raw_reward = sum(eval_rewards) / len(eval_rewards) if eval_rewards else 0.0001
-    final_reward = round(min(max(raw_reward, 0.0001), 0.9999), 4)
+    raw_reward = sum(eval_rewards) / len(eval_rewards) if eval_rewards else 0.001
+    final_reward = round(min(max(raw_reward, 0.001), 0.999), 4)
     
     rewards_str  = ",".join(f"{r:.2f}" for r in rewards)
 
     print(
         f"[END] success={str(success).lower()} steps={global_step} "
-        f"rewards={rewards_str}",
+        f"score={final_reward:.3f} rewards={rewards_str}",
         flush=True
     )
 
@@ -438,20 +438,20 @@ async def main(config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
 
         stats = calculate_statistics(all_runs)
 
-        print()
-        print("=" * 70)
-        print("BENCHMARK SUMMARY")
-        print("=" * 70)
-        print(f"Task:           {task}")
-        print(f"Model:          {config['model_name']}")
-        print(f"Runs:           {stats['total_runs']}")
-        print(f"Successful:     {stats['successful_runs']}/{stats['total_runs']}")
-        print(f"Avg steps:      {stats['avg_steps_per_run']}")
-        print(f"Avg reward:     {stats['avg_final_reward']:.4f}")
-        print(f"Mean time:      {stats['mean_elapsed_ms']:.0f} ms")
-        print(f"Tool usage:     {stats['tool_usage']}")
-        print(f"Results file:   {out_file}")
-        print("=" * 70)
+        logger.info("")
+        logger.info("=" * 70)
+        logger.info("BENCHMARK SUMMARY")
+        logger.info("=" * 70)
+        logger.info(f"Task:           {task}")
+        logger.info(f"Model:          {config['model_name']}")
+        logger.info(f"Runs:           {stats['total_runs']}")
+        logger.info(f"Successful:     {stats['successful_runs']}/{stats['total_runs']}")
+        logger.info(f"Avg steps:      {stats['avg_steps_per_run']}")
+        logger.info(f"Avg reward:     {stats['avg_final_reward']:.4f}")
+        logger.info(f"Mean time:      {stats['mean_elapsed_ms']:.0f} ms")
+        logger.info(f"Tool usage:     {stats['tool_usage']}")
+        logger.info(f"Results file:   {out_file}")
+        logger.info("=" * 70)
         
         all_tasks_results[task] = {"benchmark_config": config.copy(), "runs": all_runs, "statistics": stats}
 

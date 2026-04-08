@@ -1,9 +1,12 @@
 import ast
 import difflib
 
+def _clamp(val: float) -> float:
+    return float(round(min(max(val, 0.0001), 0.9999), 4))
+
 def grade(pass_rate: float) -> float:
     """Baseline reward — direct pass rate (used as fallback)."""
-    return float(pass_rate)
+    return _clamp(pass_rate)
 
 
 def grade_by_comparison(submitted: str, reference: str) -> float:
@@ -16,7 +19,7 @@ def grade_by_comparison(submitted: str, reference: str) -> float:
         sub_ast = ast.unparse(ast.parse(submitted))
         ref_ast = ast.unparse(ast.parse(reference))
         if sub_ast == ref_ast:
-            return 1.0
+            return 0.9999
     except Exception:
         pass  # Fall back to token comparison if syntax is invalid
 
@@ -24,10 +27,10 @@ def grade_by_comparison(submitted: str, reference: str) -> float:
     ref_lines = [line.strip() for line in reference.splitlines() if line.strip()]
     
     if not ref_lines:
-        return 0.0 if sub_lines else 1.0
+        return 0.0001 if sub_lines else 0.9999
         
     matcher = difflib.SequenceMatcher(None, sub_lines, ref_lines)
-    return round(matcher.ratio(), 4)
+    return _clamp(matcher.ratio())
 
 
 def grade_with_steps(pass_rate: float, step_count: int, max_steps: int = 40) -> float:
@@ -40,7 +43,7 @@ def grade_with_steps(pass_rate: float, step_count: int, max_steps: int = 40) -> 
     - Efficiency bonus: up to +0.2 for solving early (only on full solve)
     """
     if pass_rate == 0.0:
-        return 0.0
+        return 0.0001
 
     base = float(pass_rate)
 
@@ -56,4 +59,4 @@ def grade_with_steps(pass_rate: float, step_count: int, max_steps: int = 40) -> 
         efficiency_bonus = 0.2 * max(0.0, 1.0 - step_count / max_steps)
 
     reward = base - penalty + completion_bonus + efficiency_bonus
-    return round(min(max(reward, 0.0), 1.0), 4)
+    return _clamp(reward)

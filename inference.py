@@ -318,13 +318,14 @@ async def execute_run(
     elapsed_ms   = int((datetime.now(timezone.utc) - start_ts).total_seconds() * 1000)
     
     eval_rewards = [s["reward"] for s in steps_detail if s["tool"] in ("edit_file", "run_tests")]
-    final_reward = sum(eval_rewards) / len(eval_rewards) if eval_rewards else 0.0
+    raw_reward = sum(eval_rewards) / len(eval_rewards) if eval_rewards else 0.0001
+    final_reward = round(min(max(raw_reward, 0.0001), 0.9999), 4)
     
     rewards_str  = ",".join(f"{r:.2f}" for r in rewards)
 
     print(
         f"[END] success={str(success).lower()} steps={global_step} "
-        f"score={final_reward:.2f} rewards={rewards_str}",
+        f"rewards={rewards_str}",
         flush=True
     )
 
@@ -360,7 +361,6 @@ def calculate_statistics(runs: List[Dict[str, Any]]) -> Dict[str, Any]:
     return {
         "total_runs":        total,
         "successful_runs":   n_success,
-        "success_rate":      n_success / total if total else 0.0,
         **pass_at,
         "avg_steps_per_run": round(sum(len(r["rewards"]) for r in runs) / total if total else 0, 2),
         "avg_final_reward":  round(sum(r["final_reward"] for r in runs) / total if total else 0, 4),
@@ -453,7 +453,7 @@ async def main(config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         print(f"Task:           {task}")
         print(f"Model:          {config['model_name']}")
         print(f"Runs:           {stats['total_runs']}")
-        print(f"Success rate:   {stats['success_rate']:.1%}  ({stats['successful_runs']}/{stats['total_runs']})")
+        print(f"Successful:     {stats['successful_runs']}/{stats['total_runs']}")
         for k in range(1, n_runs + 1):
             key = f"pass@{k}"
             if key in stats:

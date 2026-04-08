@@ -5,8 +5,7 @@ colorFrom: blue
 colorTo: indigo
 sdk: docker
 pinned: true
-app_port: 8000
-base_path: /web
+app_port: 7860
 tags:
   - openenv
   - debugging

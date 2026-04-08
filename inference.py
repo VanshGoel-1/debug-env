@@ -316,7 +316,10 @@ async def execute_run(
             await env_step(env_url, "edit_file", {"path": fname, "content": original}, delay_ms=0)
 
     elapsed_ms   = int((datetime.now(timezone.utc) - start_ts).total_seconds() * 1000)
-    final_reward = rewards[-1] if rewards else 0.0
+    
+    eval_rewards = [s["reward"] for s in steps_detail if s["tool"] in ("edit_file", "run_tests")]
+    final_reward = sum(eval_rewards) / len(eval_rewards) if eval_rewards else 0.0
+    
     rewards_str  = ",".join(f"{r:.2f}" for r in rewards)
 
     print(

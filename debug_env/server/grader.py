@@ -1,3 +1,6 @@
+import ast
+import difflib
+
 def grade(pass_rate: float) -> float:
     """Baseline reward — direct pass rate (used as fallback)."""
     return float(pass_rate)
@@ -5,24 +8,26 @@ def grade(pass_rate: float) -> float:
 
 def grade_by_comparison(submitted: str, reference: str) -> float:
     """
-    Compare submitted code to reference line-by-line.
-    +10 for each matching line, -10 for each non-matching line.
-    Normalized to [0, 1] via (score + n*10) / (2*n*10).
+    Grades submitted code against reference code, prioritizing semantic exactness.
+    - First attempts AST parsing: if both codes produce identical ASTs, returns 1.0.
+    - If AST parsing fails or differs, falls back to difflib SequenceMatcher on sanitized lines.
     """
-    sub_lines = submitted.splitlines()
-    ref_lines = reference.splitlines()
-    n = max(len(sub_lines), len(ref_lines))
-    if n == 0:
-        return 0.0
+    try:
+        sub_ast = ast.unparse(ast.parse(submitted))
+        ref_ast = ast.unparse(ast.parse(reference))
+        if sub_ast == ref_ast:
+            return 1.0
+    except Exception:
+        pass  # Fall back to token comparison if syntax is invalid
 
-    score = 0
-    for i in range(n):
-        sub_line = sub_lines[i] if i < len(sub_lines) else ""
-        ref_line = ref_lines[i] if i < len(ref_lines) else ""
-        score += 10 if sub_line == ref_line else -10
-
-    normalized = (score + n * 10) / (2 * n * 10)
-    return round(max(0.0, min(1.0, normalized)), 4)
+    sub_lines = [line.strip() for line in submitted.splitlines() if line.strip()]
+    ref_lines = [line.strip() for line in reference.splitlines() if line.strip()]
+    
+    if not ref_lines:
+        return 0.0 if sub_lines else 1.0
+        
+    matcher = difflib.SequenceMatcher(None, sub_lines, ref_lines)
+    return round(matcher.ratio(), 4)
 
 
 def grade_with_steps(pass_rate: float, step_count: int, max_steps: int = 40) -> float:

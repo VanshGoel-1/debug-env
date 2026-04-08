@@ -1,0 +1,12 @@
+# Patterns excluded when running: openenv push --exclude pushignore.txt
+# Syntax: one glob pattern per line, # = comment
+
+# Moved planning/reference docs — not needed on HF Space
+unnecessary/
+
+# Runtime SQLite database — recreated fresh on startup
+debug_env/server/debug_env.db
+
+# Python cache (also covered by defaults, but explicit for clarity)
+**/__pycache__/
+**/*.pyc

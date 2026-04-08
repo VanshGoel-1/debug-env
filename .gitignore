@@ -9,6 +9,7 @@ QUICKSTART.md
 COMPETITION_CHECKLIST.md
 IMPLEMENTATION_SUMMARY.md
 TECHNOLOGY_INTEGRATION.md
+STACK_REFERENCE.md
 .cursorrules
 .windsurfrules
 .mcp.json
@@ -38,8 +39,6 @@ env/
 .coverage
 htmlcov/
 
-# uv
-uv.lock
 
 # Environment variables
 .env

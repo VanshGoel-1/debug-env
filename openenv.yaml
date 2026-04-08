@@ -2,12 +2,12 @@ spec_version: 1
 name: debug_env
 type: space
 runtime: fastapi
-app: server.app:app
+app: debug_env.server.app:app
 port: 8000
 description: >
   A real-world debugging environment where LLM agents fix broken Python code.
   Tasks range from simple syntax errors to complex logic bugs. Agents use
-  read_file, edit_file, and run_tests tools to identify and fix issues.
+  read_file, edit_file, list_files, and run_tests tools to identify and fix issues.
   Rewards are based on test pass rate (0.0-1.0).
 
 author: Meta Platforms, Inc.
@@ -41,7 +41,7 @@ action_schema:
   properties:
     tool:
       type: string
-      enum: ["run_tests", "read_file", "edit_file"]
+      enum: ["run_tests", "read_file", "edit_file", "list_files"]
       description: Name of the tool to execute
     args:
       type: object
@@ -91,7 +91,7 @@ performance_metrics:
 
 deployment:
   huggingface_space: true
-  dockerfile: ./debug_env/server/Dockerfile
+  dockerfile: ./Dockerfile
   docker_compose: ./docker-compose.yml
   health_check: /health
   max_runtime_minutes: 20

@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.git/
+.gitignore
+*.egg-info/
+.env
+.env.*
+!.env.example
+results_*.json
+*.db
+.cursor/
+.vscode/
+*.md
+!README.md

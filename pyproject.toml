@@ -71,19 +71,23 @@ dev = [
     "black>=24.0.0",
     "ruff>=0.3.0",
 ]
+training = [
+    "trl>=0.12.0",
+    "datasets>=2.20.0",
+    "transformers>=4.45.0",
+    "peft>=0.13.0",
+    "accelerate>=0.34.0",
+    "torch>=2.4.0",
+    "unsloth",
+]
 
 [project.scripts]
-# Server entry point - enables running via: python -m debug_env.server.app
 server = "debug_env.server.app:main"
-
-# Inference entry point
-inference = "inference:main"
 
 [tool.setuptools]
 include-package-data = true
 
 [tool.setuptools.packages.find]
-where = ["debug_env"]
 include = ["debug_env*"]
 
 [tool.black]

@@ -63,7 +63,7 @@ def check_task_files() -> Tuple[bool, str]:
 
 def check_docker_file() -> Tuple[bool, str]:
     """Check Dockerfile exists and is readable."""
-    dockerfile = "debug_env/server/Dockerfile"
+    dockerfile = "Dockerfile"
     if Path(dockerfile).exists():
         try:
             with open(dockerfile) as f:
@@ -83,14 +83,13 @@ def main():
 
     # 1. File structure
     print("1. Checking file structure...")
-    checks.append(check_file_exists("debug_env/openenv.yaml", "openenv.yaml"))
+    checks.append(check_file_exists("openenv.yaml", "openenv.yaml"))
     checks.append(check_file_exists("inference.py", "inference.py (competition entry point)"))
     checks.append(check_file_exists(".env", ".env configuration"))
     checks.append(check_file_exists(".env.example", ".env.example template"))
     checks.append(check_file_exists("README.md", "README.md"))
-    checks.append(check_file_exists("QUICKSTART.md", "QUICKSTART.md"))
-    checks.append(check_file_exists("COMPETITION_CHECKLIST.md", "COMPETITION_CHECKLIST.md"))
     checks.append(check_file_exists("pyproject.toml", "pyproject.toml (root)"))
+    checks.append(check_file_exists("uv.lock", "uv.lock (dependency lock file)"))
     checks.append(check_file_exists("docker-compose.yml", "docker-compose.yml"))
     checks.append(check_docker_file())
 
@@ -111,7 +110,7 @@ def main():
 
     # 5. Environment variables
     print("\n5. Checking environment configuration...")
-    checks.append(check_env_var("OPENAI_API_KEY"))
+    checks.append(check_env_var("HF_TOKEN"))
     checks.append(check_env_var("API_BASE_URL"))
     checks.append(check_env_var("MODEL_NAME"))
 
@@ -137,18 +136,19 @@ def main():
     if failed == 0:
         print("[SUCCESS] All checks passed! Your setup is ready for competition.\n")
         print("Next steps:")
-        print("  1. Set OPENAI_API_KEY in .env with your actual API key")
-        print("  2. Run: python inference.py")
-        print("  3. Check results in results_task1_*.json")
-        print("  4. Deploy to Hugging Face Spaces")
+        print("  1. Ensure HF_TOKEN is set in .env")
+        print("  2. Run: uv run server  (Terminal 1)")
+        print("  3. Run: python inference.py  (Terminal 2)")
+        print("  4. Check results in results_task1_*.json")
+        print("  5. Deploy: openenv push --repo-id your-username/debug-env")
         return 0
     else:
         print(f"[ERROR] {failed} checks failed. Please fix the issues above.\n")
         if failed >= 2:
             print("Start with:")
-            print("  1. pip install -e .")
+            print("  1. uv sync")
             print("  2. cp .env.example .env")
-            print("  3. Edit .env with your OPENAI_API_KEY")
+            print("  3. Edit .env with your HF_TOKEN")
         return 1
 
 if __name__ == "__main__":

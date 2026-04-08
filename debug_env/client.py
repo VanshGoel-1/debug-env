@@ -21,62 +21,40 @@ class DebugEnv(
     """
     Client for the Debug Env Environment.
 
-    This client maintains a persistent WebSocket connection to the environment server,
+    Maintains a persistent WebSocket connection to the environment server,
     enabling efficient multi-step interactions with lower latency.
-    Each client instance has its own dedicated environment session on the server.
 
     Example:
-        >>> # Connect to a running server
         >>> with DebugEnv(base_url="http://localhost:8000") as client:
-        ...     result = client.reset()
-        ...     print(result.observation.echoed_message)
-        ...
-        ...     result = client.step(DebugAction(message="Hello!"))
-        ...     print(result.observation.echoed_message)
+        ...     client.reset(task="task1")
+        ...     result = client.step(DebugAction(tool="run_tests", args={}))
+        ...     print(result.observation.pass_rate)
 
     Example with Docker:
-        >>> # Automatically start container and connect
         >>> client = DebugEnv.from_docker_image("debug_env-env:latest")
         >>> try:
-        ...     result = client.reset()
-        ...     result = client.step(DebugAction(message="Test"))
+        ...     client.reset(task="task1")
+        ...     result = client.step(DebugAction(tool="list_files", args={}))
         ... finally:
         ...     client.close()
     """
 
     def _step_payload(self, action: DebugAction) -> Dict:
-        """
-        Convert DebugAction to JSON payload for step message.
-
-        Args:
-            action: DebugAction instance
-
-        Returns:
-            Dictionary representation suitable for JSON encoding
-        """
+        """Convert DebugAction to JSON payload for the step message."""
         return {
-            "message": action.message,
+            "tool": action.tool,
+            "args": action.args,
         }
 
     def _parse_result(self, payload: Dict) -> StepResult[DebugObservation]:
-        """
-        Parse server response into StepResult[DebugObservation].
-
-        Args:
-            payload: JSON response data from server
-
-        Returns:
-            StepResult with DebugObservation
-        """
+        """Parse server response into StepResult[DebugObservation]."""
         obs_data = payload.get("observation", {})
         observation = DebugObservation(
-            echoed_message=obs_data.get("echoed_message", ""),
-            message_length=obs_data.get("message_length", 0),
+            pass_rate=obs_data.get("pass_rate", 0.0),
+            logs=obs_data.get("logs", ""),
             done=payload.get("done", False),
             reward=payload.get("reward"),
-            metadata=obs_data.get("metadata", {}),
         )
-
         return StepResult(
             observation=observation,
             reward=payload.get("reward"),
@@ -84,15 +62,7 @@ class DebugEnv(
         )
 
     def _parse_state(self, payload: Dict) -> State:
-        """
-        Parse server response into State object.
-
-        Args:
-            payload: JSON response from state request
-
-        Returns:
-            State object with episode_id and step_count
-        """
+        """Parse server response into State object."""
         return State(
             episode_id=payload.get("episode_id"),
             step_count=payload.get("step_count", 0),

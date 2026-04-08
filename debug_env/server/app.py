@@ -28,27 +28,14 @@ Usage:
     python -m server.app
 """
 
-try:
-    from openenv.core.env_server.http_server import create_app
-except Exception as e:  # pragma: no cover
-    raise ImportError(
-        "openenv is required for the web interface. Install dependencies with '\n    uv sync\n'"
-    ) from e
+from openenv.core.env_server.http_server import create_app
 
-try:
-    from ..models import DebugAction, DebugObservation
-    from .core.apis import router as core_router
-    from .debug_env_environment import DebugEnvironment
-    from .mcp.router import router as mcp_router
-    from .tasks.router import router as tasks_router
-    from .database.db import init_db
-except ModuleNotFoundError:
-    from models import DebugAction, DebugObservation
-    from server.core.apis import router as core_router
-    from server.debug_env_environment import DebugEnvironment
-    from server.mcp.router import router as mcp_router
-    from server.tasks.router import router as tasks_router
-    from server.database.db import init_db
+from debug_env.models import DebugAction, DebugObservation
+from debug_env.server.core.apis import router as core_router
+from debug_env.server.database.db import init_db
+from debug_env.server.debug_env_environment import DebugEnvironment
+from debug_env.server.mcp.router import router as mcp_router
+from debug_env.server.tasks.router import router as tasks_router
 
 
 # Create the app with web interface and README integration

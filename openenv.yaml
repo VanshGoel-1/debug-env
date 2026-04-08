@@ -35,6 +35,42 @@ tasks:
       Agent must diagnose and fix all issues to pass all tests.
     difficulty: hard
     estimated_steps: 8
+  - id: task4
+    title: "Type Error Detection"
+    description: >
+      Identify and fix type annotation errors detected by static type checking.
+    difficulty: medium
+    estimated_steps: 5
+  - id: task5
+    title: "Unused Imports and Dead Code"
+    description: >
+      Find and remove unused imports and dead code using code analysis tools.
+    difficulty: medium
+    estimated_steps: 5
+  - id: task6
+    title: "Complex Multi-file Refactoring"
+    description: >
+      Refactor code across multiple files while maintaining test coverage and fixing architectural issues.
+    difficulty: hard
+    estimated_steps: 8
+  - id: task7
+    title: "Code Review Workflow"
+    description: >
+      Multi-user collaborative task: Junior developer submits fix that needs code review and approval.
+    difficulty: medium
+    estimated_steps: 5
+  - id: task8
+    title: "Cross-team Bug Investigation"
+    description: >
+      Multi-user collaborative task: QA reported bug, dev team investigates and implements fix.
+    difficulty: hard
+    estimated_steps: 8
+  - id: task9
+    title: "Collaborative Architecture Refactoring"
+    description: >
+      Multi-user collaborative task: Large refactoring with multiple developers working in parallel.
+    difficulty: hard
+    estimated_steps: 10
 
 action_schema:
   type: object

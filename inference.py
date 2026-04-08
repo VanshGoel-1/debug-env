@@ -51,18 +51,29 @@ logger = logging.getLogger(__name__)
 
 # ── Configuration ───────────────────────────────────────────────────────────────
 
-CONFIG = {
-    "env_url":           os.getenv("ENV_URL",           "http://localhost:7860"),
-    "api_base_url":      os.getenv("API_BASE_URL",      "https://router.huggingface.co/v1"),
-    "model_name":        os.getenv("MODEL_NAME",        "Qwen/Qwen2.5-72B-Instruct"),
-    "api_key":           os.getenv("API_KEY") or os.getenv("HF_TOKEN"),
-    "task":              os.getenv("TASK",              "task1"),
-    "number_of_runs":    int(os.getenv("NUMBER_OF_RUNS",    "1")),
-    "max_steps_per_run": int(os.getenv("MAX_STEPS",         "10")),
-    "temperature":       float(os.getenv("TEMPERATURE",     "0.0")),
-    "max_tokens":        int(os.getenv("MAX_TOKENS",        "2048")),
-    "request_delay_ms":  int(os.getenv("REQUEST_DELAY_MS",  "500")),
-}
+def _ensure_env_vars():
+    """Ensure environment variables exist so os.environ[...] doesn't raise KeyError locally."""
+    if "API_BASE_URL" not in os.environ:
+        os.environ["API_BASE_URL"] = "https://router.huggingface.co/v1"
+    if "MODEL_NAME" not in os.environ:
+        os.environ["MODEL_NAME"] = "Qwen/Qwen2.5-72B-Instruct"
+    if "API_KEY" not in os.environ:
+        os.environ["API_KEY"] = os.environ.get("HF_TOKEN", "dummy_key_for_local_testing")
+
+def get_config() -> Dict[str, Any]:
+    _ensure_env_vars()
+    return {
+        "env_url":           os.getenv("ENV_URL",           "http://localhost:7860"),
+        "api_base_url":      os.environ["API_BASE_URL"],
+        "model_name":        os.environ["MODEL_NAME"],
+        "api_key":           os.environ["API_KEY"],
+        "task":              os.getenv("TASK",              "task1"),
+        "number_of_runs":    int(os.getenv("NUMBER_OF_RUNS",    "1")),
+        "max_steps_per_run": int(os.getenv("MAX_STEPS",         "10")),
+        "temperature":       float(os.getenv("TEMPERATURE",     "0.0")),
+        "max_tokens":        int(os.getenv("MAX_TOKENS",        "2048")),
+        "request_delay_ms":  int(os.getenv("REQUEST_DELAY_MS",  "500")),
+    }
 
 
 def _validate_config(config: Dict[str, Any]) -> None:
@@ -76,11 +87,12 @@ def _validate_config(config: Dict[str, Any]) -> None:
 
 # ── LLM client (OpenAI SDK → HuggingFace router) ────────────────────────────────
 
-def _init_client(config: Dict[str, Any]) -> OpenAI:
+def _init_client() -> OpenAI:
     """OpenAI client pointed at the HuggingFace OpenAI-compatible endpoint."""
+    _ensure_env_vars()
     return OpenAI(
-        api_key=config["api_key"],
-        base_url=config["api_base_url"],
+        base_url=os.environ["API_BASE_URL"],
+        api_key=os.environ["API_KEY"],
     )
 
 
@@ -136,7 +148,7 @@ def _log_step(step, tool_name, tool_args, reward, done, error=None):
         action_str = f"{tool_name}({args_str})"
     else:
         action_str = f"{tool_name}()"
-    print(f"[STEP] step={step} action={action_str} reward={reward:.2f} done={str(done).lower()} error={error or 'null'}")
+    print(f"[STEP] step={step} action={action_str} reward={reward:.2f} done={str(done).lower()} error={error or 'null'}", flush=True)
 
 
 def _parse_file_list(logs: str) -> List[str]:
@@ -195,7 +207,7 @@ async def execute_run(
     task    = config["task"]
     model   = config["model_name"]
 
-    print(f"[START] task={task} env=debug-env model={model}")
+    print(f"[START] task={task} env=debug-env model={model}", flush=True)
 
     rewards:      List[float] = []
     tools_used:   List[str]   = []
@@ -276,7 +288,7 @@ async def execute_run(
 
         try:
             response = client.chat.completions.create(
-                model=model,
+                model=os.environ["MODEL_NAME"],
                 messages=[{"role": "user", "content": prompt}],
                 temperature=config["temperature"],
                 max_tokens=config["max_tokens"],
@@ -297,13 +309,20 @@ async def execute_run(
         reward, done = res.get("reward", 0.0), res.get("done", False)
         _record("edit_file", {"path": fname}, reward, done)
 
+    # ── Remove Generated Solution ──────────────────────────────────────────────
+    for fname in files:
+        original = file_contents.get(fname)
+        if original:
+            await env_step(env_url, "edit_file", {"path": fname, "content": original}, delay_ms=0)
+
     elapsed_ms   = int((datetime.now(timezone.utc) - start_ts).total_seconds() * 1000)
     final_reward = rewards[-1] if rewards else 0.0
     rewards_str  = ",".join(f"{r:.2f}" for r in rewards)
 
     print(
         f"[END] success={str(success).lower()} steps={global_step} "
-        f"score={final_reward:.2f} rewards={rewards_str}"
+        f"score={final_reward:.2f} rewards={rewards_str}",
+        flush=True
     )
 
     return {
@@ -370,7 +389,7 @@ def _save_results(all_runs: List[Dict], config: Dict, out_file: str) -> None:
 
 async def main(config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     if config is None:
-        config = CONFIG
+        config = get_config()
 
     try:
         _validate_config(config)
@@ -378,63 +397,74 @@ async def main(config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         logger.error(f"Configuration error: {e}")
         sys.exit(1)
 
-    task   = config["task"]
+    tasks_input = config["task"].split(",") if "," in config["task"] else [config["task"]]
+    tasks = [f"task{i}" for i in range(1, 10)] if "all" in tasks_input else tasks_input
     n_runs = config["number_of_runs"]
+    client = _init_client()
 
-    logger.info("=" * 70)
-    logger.info("DEBUG-ENV BENCHMARK")
-    logger.info(f"task={task}  model={config['model_name']}  runs={n_runs}  max_steps={config['max_steps_per_run']}")
-    logger.info(f"endpoint={config['api_base_url']}")
-    logger.info("=" * 70)
+    all_tasks_results = {}
 
-    client   = _init_client(config)
-    all_runs: List[Dict[str, Any]] = []
-    ts       = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    out_file = f"results_{task}_{ts}.json"
+    for task in tasks:
+        config["task"] = task
+        logger.info("=" * 70)
+        logger.info("DEBUG-ENV BENCHMARK")
+        logger.info(f"task={task}  model={config['model_name']}  runs={n_runs}  max_steps={config['max_steps_per_run']}")
+        logger.info(f"endpoint={config['api_base_url']}")
+        logger.info("=" * 70)
 
-    for run_number in range(1, n_runs + 1):
-        try:
-            result = await execute_run(run_number, client, config)
-            all_runs.append(result)
-        except Exception as e:
-            logger.error(f"Run {run_number} failed: {e}", exc_info=True)
-            all_runs.append({
-                "run_number":   run_number,
-                "success":      False,
-                "final_reward": 0.0,
-                "rewards":      [],
-                "steps":        [],
-                "tools_used":   [],
-                "elapsed_ms":   0,
-                "error":        str(e),
-            })
+        all_runs: List[Dict[str, Any]] = []
+        ts       = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        out_file = f"results_{task}_{ts}.json"
 
-        # Save after every run so partial results are never lost
-        _save_results(all_runs, config, out_file)
-        logger.info(f"Results saved → {out_file}  (run {run_number}/{n_runs})")
+        for run_number in range(1, n_runs + 1):
+            try:
+                result = await execute_run(run_number, client, config)
+                all_runs.append(result)
+            except Exception as e:
+                logger.error(f"Run {run_number} failed: {e}", exc_info=True)
+                all_runs.append({
+                    "run_number":   run_number,
+                    "success":      False,
+                    "final_reward": 0.0,
+                    "rewards":      [],
+                    "steps":        [],
+                    "tools_used":   [],
+                    "elapsed_ms":   0,
+                    "error":        str(e),
+                })
 
-    stats = calculate_statistics(all_runs)
+            # Save after every run so partial results are never lost
+            _save_results(all_runs, config, out_file)
+            logger.info(f"Results saved → {out_file}  (run {run_number}/{n_runs})")
 
-    print()
-    print("=" * 70)
-    print("BENCHMARK SUMMARY")
-    print("=" * 70)
-    print(f"Task:           {task}")
-    print(f"Model:          {config['model_name']}")
-    print(f"Runs:           {stats['total_runs']}")
-    print(f"Success rate:   {stats['success_rate']:.1%}  ({stats['successful_runs']}/{stats['total_runs']})")
-    for k in range(1, n_runs + 1):
-        key = f"pass@{k}"
-        if key in stats:
-            print(f"{key:15} {stats[key]:.1%}")
-    print(f"Avg steps:      {stats['avg_steps_per_run']}")
-    print(f"Avg reward:     {stats['avg_final_reward']:.4f}")
-    print(f"Mean time:      {stats['mean_elapsed_ms']:.0f} ms")
-    print(f"Tool usage:     {stats['tool_usage']}")
-    print(f"Results file:   {out_file}")
-    print("=" * 70)
+            if all_runs[-1]["success"]:
+                logger.info(f"Task {task} solved successfully on run {run_number}. Moving to next task.")
+                break
 
-    return {"benchmark_config": config, "runs": all_runs, "statistics": stats}
+        stats = calculate_statistics(all_runs)
+
+        print()
+        print("=" * 70)
+        print("BENCHMARK SUMMARY")
+        print("=" * 70)
+        print(f"Task:           {task}")
+        print(f"Model:          {config['model_name']}")
+        print(f"Runs:           {stats['total_runs']}")
+        print(f"Success rate:   {stats['success_rate']:.1%}  ({stats['successful_runs']}/{stats['total_runs']})")
+        for k in range(1, n_runs + 1):
+            key = f"pass@{k}"
+            if key in stats:
+                print(f"{key:15} {stats[key]:.1%}")
+        print(f"Avg steps:      {stats['avg_steps_per_run']}")
+        print(f"Avg reward:     {stats['avg_final_reward']:.4f}")
+        print(f"Mean time:      {stats['mean_elapsed_ms']:.0f} ms")
+        print(f"Tool usage:     {stats['tool_usage']}")
+        print(f"Results file:   {out_file}")
+        print("=" * 70)
+        
+        all_tasks_results[task] = {"benchmark_config": config.copy(), "runs": all_runs, "statistics": stats}
+
+    return all_tasks_results
 
 
 if __name__ == "__main__":

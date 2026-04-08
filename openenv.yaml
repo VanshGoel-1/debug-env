@@ -3,7 +3,7 @@ name: debug_env
 type: space
 runtime: fastapi
 app: debug_env.server.app:app
-port: 8000
+port: 7860
 description: >
   A real-world debugging environment where LLM agents fix broken Python code.
   Tasks range from simple syntax errors to complex logic bugs. Agents use

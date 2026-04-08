@@ -346,13 +346,6 @@ def calculate_statistics(runs: List[Dict[str, Any]]) -> Dict[str, Any]:
     total     = len(runs)
     n_success = sum(1 for r in runs if r["success"])
 
-    pass_at = {}
-    for k in range(1, total + 1):
-        if total - n_success < k:
-            pass_at[f"pass@{k}"] = 1.0
-        else:
-            pass_at[f"pass@{k}"] = 1.0 - comb(total - n_success, k) / comb(total, k)
-
     tool_counts: Dict[str, int] = {}
     for r in runs:
         for t in r["tools_used"]:
@@ -361,7 +354,6 @@ def calculate_statistics(runs: List[Dict[str, Any]]) -> Dict[str, Any]:
     return {
         "total_runs":        total,
         "successful_runs":   n_success,
-        **pass_at,
         "avg_steps_per_run": round(sum(len(r["rewards"]) for r in runs) / total if total else 0, 2),
         "avg_final_reward":  round(sum(r["final_reward"] for r in runs) / total if total else 0, 4),
         "mean_elapsed_ms":   round(sum(r["elapsed_ms"]   for r in runs) / total if total else 0, 0),
@@ -454,10 +446,6 @@ async def main(config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         print(f"Model:          {config['model_name']}")
         print(f"Runs:           {stats['total_runs']}")
         print(f"Successful:     {stats['successful_runs']}/{stats['total_runs']}")
-        for k in range(1, n_runs + 1):
-            key = f"pass@{k}"
-            if key in stats:
-                print(f"{key:15} {stats[key]:.1%}")
         print(f"Avg steps:      {stats['avg_steps_per_run']}")
         print(f"Avg reward:     {stats['avg_final_reward']:.4f}")
         print(f"Mean time:      {stats['mean_elapsed_ms']:.0f} ms")

@@ -340,46 +340,6 @@ async def execute_run(
     }
 
 
-# ── Statistics ───────────────────────────────────────────────────────────────────
-
-def calculate_statistics(runs: List[Dict[str, Any]]) -> Dict[str, Any]:
-    total     = len(runs)
-    n_success = sum(1 for r in runs if r["success"])
-
-    tool_counts: Dict[str, int] = {}
-    for r in runs:
-        for t in r["tools_used"]:
-            tool_counts[t] = tool_counts.get(t, 0) + 1
-
-    return {
-        "total_runs":        total,
-        "successful_runs":   n_success,
-        "avg_steps_per_run": round(sum(len(r["rewards"]) for r in runs) / total if total else 0, 2),
-        "avg_final_reward":  round(sum(r["final_reward"] for r in runs) / total if total else 0, 4),
-        "mean_elapsed_ms":   round(sum(r["elapsed_ms"]   for r in runs) / total if total else 0, 0),
-        "tool_usage":        tool_counts,
-    }
-
-
-def _save_results(all_runs: List[Dict], config: Dict, out_file: str) -> None:
-    """Write partial or final results to JSON — called after every run."""
-    stats  = calculate_statistics(all_runs)
-    output = {
-        "benchmark_config": {
-            "task":              config["task"],
-            "model":             config["model_name"],
-            "api_base_url":      config["api_base_url"],
-            "number_of_runs":    config["number_of_runs"],
-            "max_steps_per_run": config["max_steps_per_run"],
-            "temperature":       config["temperature"],
-        },
-        "runs":       all_runs,
-        "statistics": stats,
-    }
-    with open(out_file, "w") as f:
-        json.dump(output, f, indent=2, default=str)
-
-
 # ── Main ─────────────────────────────────────────────────────────────────────────
 
 async def main(config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -397,65 +357,15 @@ async def main(config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     n_runs = config["number_of_runs"]
     client = _init_client()
 
-    all_tasks_results = {}
-
     for task in tasks:
         config["task"] = task
-        logger.info("=" * 70)
-        logger.info("DEBUG-ENV BENCHMARK")
-        logger.info(f"task={task}  model={config['model_name']}  runs={n_runs}  max_steps={config['max_steps_per_run']}")
-        logger.info(f"endpoint={config['api_base_url']}")
-        logger.info("=" * 70)
-
-        all_runs: List[Dict[str, Any]] = []
-        ts       = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-        out_file = f"results_{task}_{ts}.json"
-
         for run_number in range(1, n_runs + 1):
             try:
                 result = await execute_run(run_number, client, config)
-                all_runs.append(result)
+                if result["success"]:
+                    break
             except Exception as e:
                 logger.error(f"Run {run_number} failed: {e}", exc_info=True)
-                all_runs.append({
-                    "run_number":   run_number,
-                    "success":      False,
-                    "final_reward": 0.0,
-                    "rewards":      [],
-                    "steps":        [],
-                    "tools_used":   [],
-                    "elapsed_ms":   0,
-                    "error":        str(e),
-                })
-
-            # Save after every run so partial results are never lost
-            _save_results(all_runs, config, out_file)
-            logger.info(f"Results saved → {out_file}  (run {run_number}/{n_runs})")
-
-            if all_runs[-1]["success"]:
-                logger.info(f"Task {task} solved successfully on run {run_number}. Moving to next task.")
-                break
-
-        stats = calculate_statistics(all_runs)
-
-        logger.info("")
-        logger.info("=" * 70)
-        logger.info("BENCHMARK SUMMARY")
-        logger.info("=" * 70)
-        logger.info(f"Task:           {task}")
-        logger.info(f"Model:          {config['model_name']}")
-        logger.info(f"Runs:           {stats['total_runs']}")
-        logger.info(f"Successful:     {stats['successful_runs']}/{stats['total_runs']}")
-        logger.info(f"Avg steps:      {stats['avg_steps_per_run']}")
-        logger.info(f"Avg reward:     {stats['avg_final_reward']:.4f}")
-        logger.info(f"Mean time:      {stats['mean_elapsed_ms']:.0f} ms")
-        logger.info(f"Tool usage:     {stats['tool_usage']}")
-        logger.info(f"Results file:   {out_file}")
-        logger.info("=" * 70)
-        
-        all_tasks_results[task] = {"benchmark_config": config.copy(), "runs": all_runs, "statistics": stats}
-
-    return all_tasks_results
 
 
 if __name__ == "__main__":

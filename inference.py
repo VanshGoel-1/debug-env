@@ -63,16 +63,16 @@ def _ensure_env_vars():
 def get_config() -> Dict[str, Any]:
     _ensure_env_vars()
     return {
-        "env_url":           os.getenv("ENV_URL",           "http://localhost:7860"),
-        "api_base_url":      os.environ["API_BASE_URL"],
-        "model_name":        os.environ["MODEL_NAME"],
-        "api_key":           os.environ["API_KEY"],
-        "task":              os.getenv("TASK",              "task1"),
-        "number_of_runs":    int(os.getenv("NUMBER_OF_RUNS",    "1")),
-        "max_steps_per_run": int(os.getenv("MAX_STEPS",         "10")),
-        "temperature":       float(os.getenv("TEMPERATURE",     "0.0")),
-        "max_tokens":        int(os.getenv("MAX_TOKENS",        "2048")),
-        "request_delay_ms":  int(os.getenv("REQUEST_DELAY_MS",  "500")),
+        "env_url": os.getenv("ENV_URL", "http://localhost:7860"),
+        "api_base_url": os.environ["API_BASE_URL"],
+        "model_name": os.environ["MODEL_NAME"],
+        "api_key": os.environ["API_KEY"],
+        "task": os.getenv("TASK", "all"),
+        "number_of_runs": int(os.getenv("NUMBER_OF_RUNS", "1")),
+        "max_steps_per_run": int(os.getenv("MAX_STEPS", "10")),
+        "temperature": float(os.getenv("TEMPERATURE", "0.0")),
+        "max_tokens": int(os.getenv("MAX_TOKENS", "2048")),
+        "request_delay_ms": int(os.getenv("REQUEST_DELAY_MS", "500")),
     }
 
 

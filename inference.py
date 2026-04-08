@@ -55,7 +55,7 @@ CONFIG = {
     "env_url":           os.getenv("ENV_URL",           "http://localhost:7860"),
     "api_base_url":      os.getenv("API_BASE_URL",      "https://router.huggingface.co/v1"),
     "model_name":        os.getenv("MODEL_NAME",        "Qwen/Qwen2.5-72B-Instruct"),
-    "hf_token":          os.getenv("HF_TOKEN"),
+    "api_key":           os.getenv("API_KEY") or os.getenv("HF_TOKEN"),
     "task":              os.getenv("TASK",              "task1"),
     "number_of_runs":    int(os.getenv("NUMBER_OF_RUNS",    "1")),
     "max_steps_per_run": int(os.getenv("MAX_STEPS",         "10")),
@@ -66,8 +66,8 @@ CONFIG = {
 
 
 def _validate_config(config: Dict[str, Any]) -> None:
-    if not config["hf_token"]:
-        raise ValueError("HF_TOKEN is required. Set it in .env or export HF_TOKEN=hf_...")
+    if not config["api_key"]:
+        raise ValueError("API_KEY or HF_TOKEN is required.")
     if not config["model_name"]:
         raise ValueError("MODEL_NAME is required.")
     if not config["api_base_url"]:
@@ -79,7 +79,7 @@ def _validate_config(config: Dict[str, Any]) -> None:
 def _init_client(config: Dict[str, Any]) -> OpenAI:
     """OpenAI client pointed at the HuggingFace OpenAI-compatible endpoint."""
     return OpenAI(
-        api_key=config["hf_token"],
+        api_key=config["api_key"],
         base_url=config["api_base_url"],
     )
 
